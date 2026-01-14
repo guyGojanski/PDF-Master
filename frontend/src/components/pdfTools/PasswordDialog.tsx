@@ -1,25 +1,29 @@
 // Password and verification state logic (from useFilePasswords)
-import { useState } from "react";
+import { useState } from 'react';
 
 export function usePasswordState() {
-  const [filePasswords, setFilePasswords] = useState<Record<string, string>>({});
-  const [passwordVerified, setPasswordVerified] = useState<Record<string, boolean>>({});
+  const [filePasswords, setFilePasswords] = useState<Record<string, string>>(
+    {}
+  );
+  const [passwordVerified, setPasswordVerified] = useState<
+    Record<string, boolean>
+  >({});
 
   function setPassword(fileName: string, password: string) {
-    setFilePasswords(prev => ({ ...prev, [fileName]: password }));
+    setFilePasswords((prev) => ({ ...prev, [fileName]: password }));
   }
 
   function setVerified(fileName: string, verified: boolean) {
-    setPasswordVerified(prev => ({ ...prev, [fileName]: verified }));
+    setPasswordVerified((prev) => ({ ...prev, [fileName]: verified }));
   }
 
   function removePassword(fileName: string) {
-    setFilePasswords(prev => {
+    setFilePasswords((prev) => {
       const copy = { ...prev };
       delete copy[fileName];
       return copy;
     });
-    setPasswordVerified(prev => {
+    setPasswordVerified((prev) => {
       const copy = { ...prev };
       delete copy[fileName];
       return copy;
@@ -59,12 +63,19 @@ export function usePasswordState() {
  *
  * Usage: Use in merge, split, or any PDF tool that needs password entry for locked files.
  */
-import React from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Lock } from "lucide-react";
-import { FiEye, FiEyeOff } from "react-icons/fi";
+import React from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Lock } from 'lucide-react';
+import { FiEye, FiEyeOff } from 'react-icons/fi';
 
 interface PasswordDialogProps {
   open: boolean;
@@ -107,11 +118,11 @@ export function PasswordDialog({
         <div className="space-y-4 py-2">
           <div className="relative">
             <Input
-              type={showPassword ? "text" : "password"}
+              type={showPassword ? 'text' : 'password'}
               placeholder="Enter password..."
               value={password}
-              onChange={e => onPasswordChange(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && onSubmit()}
+              onChange={(e) => onPasswordChange(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && onSubmit()}
               autoFocus
               className="pr-10"
             />
@@ -120,7 +131,7 @@ export function PasswordDialog({
               className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-blue-600"
               onClick={onShowPasswordToggle}
               tabIndex={-1}
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
               {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
             </button>
@@ -130,7 +141,9 @@ export function PasswordDialog({
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onCancel}>Cancel</Button>
+          <Button variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
           <Button onClick={onSubmit}>Check Password</Button>
         </DialogFooter>
       </DialogContent>

@@ -10,16 +10,16 @@
  * - onRemove: function to remove a file by index
  * - onUnlock: function to open password dialog for a file
  */
-import React from "react";
-import { FileText, X, CheckCircle2, LockKeyhole } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import React from 'react';
+import { FileText, X, CheckCircle2, LockKeyhole } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export interface FileListItem {
   file: File;
   hasPassword: boolean;
   isVerified: boolean;
   isError: boolean;
-  rowColor?: "green" | "red";
+  rowColor?: 'green' | 'red';
 }
 
 interface FileListProps {
@@ -35,32 +35,32 @@ export function FileList({ files, onRemove, onUnlock }: FileListProps) {
         <div
           key={index}
           className={`flex items-center justify-between p-3 rounded-md border transition-colors ${
-            item.rowColor === "green"
-              ? "bg-green-50 border-green-300"
-              : item.rowColor === "red"
-              ? "bg-red-50 border-red-300"
-              : item.isError
-              ? "bg-red-50 border-red-300"
-              : "bg-slate-100 border-slate-200"
+            item.rowColor === 'green'
+              ? 'bg-green-50 border-green-300'
+              : item.rowColor === 'red'
+                ? 'bg-red-50 border-red-300'
+                : item.isError
+                  ? 'bg-red-50 border-red-300'
+                  : 'bg-slate-100 border-slate-200'
           }`}
         >
           <div className="flex items-center gap-3 overflow-hidden">
             <FileText
               className={`w-4 h-4 flex-shrink-0 ${
-                item.isError || item.rowColor === "red"
-                  ? "text-red-500"
-                  : item.rowColor === "green"
-                  ? "text-green-600"
-                  : "text-slate-500"
+                item.isError || item.rowColor === 'red'
+                  ? 'text-red-500'
+                  : item.rowColor === 'green'
+                    ? 'text-green-600'
+                    : 'text-slate-500'
               }`}
             />
             <span
               className={`text-sm truncate ${
-                item.isError || item.rowColor === "red"
-                  ? "text-red-700 font-medium"
-                  : item.rowColor === "green"
-                  ? "text-green-700 font-medium"
-                  : ""
+                item.isError || item.rowColor === 'red'
+                  ? 'text-red-700 font-medium'
+                  : item.rowColor === 'green'
+                    ? 'text-green-700 font-medium'
+                    : ''
               }`}
             >
               {item.file.name}
@@ -70,22 +70,22 @@ export function FileList({ files, onRemove, onUnlock }: FileListProps) {
                 variant="ghost"
                 size="sm"
                 className={`h-6 w-6 p-0 rounded-full ${
-                  item.isError || item.rowColor === "red"
-                    ? "text-red-500 hover:text-red-700 hover:bg-red-100 animate-pulse"
-                    : item.isVerified || item.rowColor === "green"
-                    ? "text-green-600 hover:text-green-700 hover:bg-green-100"
-                    : "text-yellow-500 hover:text-yellow-600 hover:bg-yellow-100"
+                  item.isError || item.rowColor === 'red'
+                    ? 'text-red-500 hover:text-red-700 hover:bg-red-100 animate-pulse'
+                    : item.isVerified || item.rowColor === 'green'
+                      ? 'text-green-600 hover:text-green-700 hover:bg-green-100'
+                      : 'text-yellow-500 hover:text-yellow-600 hover:bg-yellow-100'
                 }`}
                 onClick={() => onUnlock(item.file.name)}
                 title={
                   item.isError
-                    ? "Click to enter password"
-                    : item.isVerified || item.rowColor === "green"
-                    ? "Password verified"
-                    : "Password saved"
+                    ? 'Click to enter password'
+                    : item.isVerified || item.rowColor === 'green'
+                      ? 'Password verified'
+                      : 'Password saved'
                 }
               >
-                {item.isVerified || item.rowColor === "green" ? (
+                {item.isVerified || item.rowColor === 'green' ? (
                   <CheckCircle2 className="w-4 h-4" />
                 ) : (
                   <LockKeyhole className="w-4 h-4" />
