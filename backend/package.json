@@ -1,0 +1,7 @@
+{
+  "name": "backend-scripts",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "black . && uvicorn main:app --reload"
+  }
+}
