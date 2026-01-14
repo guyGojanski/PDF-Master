@@ -98,14 +98,13 @@ async def validate_file(file: UploadFile):
 
 
 async def check_files_lock(files: List[UploadFile], passwords_dict: Dict[str, str]):
-    """Check if any of the uploaded PDF files are locked"""
 
     locked_files_names = []
 
     for file in files:
         await file.seek(0)
         content = await file.read()
-        await file.seek(0)  # Use await file.seek(0) for pointer reset
+        await file.seek(0)
         try:
             pdf_reader = PyPDF2.PdfReader(io.BytesIO(content))
             if pdf_reader.is_encrypted:
@@ -121,7 +120,7 @@ async def check_files_lock(files: List[UploadFile], passwords_dict: Dict[str, st
 
 
 def handle_pdf_error(e: Exception, saved_paths: List[str]):
-    """Helper to catch password errors and cleanup"""
+
     cleanup_files(saved_paths)
     error_msg = str(e)
 
@@ -131,7 +130,7 @@ def handle_pdf_error(e: Exception, saved_paths: List[str]):
         except:
             filename = "Unknown File"
 
-        raise HTTPException(status_code=423, detail=json.dumps([filename]))  # Locked
+        raise HTTPException(status_code=423, detail=json.dumps([filename]))
 
     if isinstance(e, HTTPException):
         raise e

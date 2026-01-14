@@ -1,7 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { FileText, Scissors, Minimize, Lock, Unlock } from 'lucide-react';
-import { MergeTab } from './components/MergeTab'; // Our new import
+import { MergeTab } from './components/MergeTab';
 
 function App() {
   return (
@@ -21,6 +21,9 @@ function App() {
             <TabsTrigger value="merge" className="gap-2 py-3">
               <FileText className="w-4 h-4" /> Merge
             </TabsTrigger>
+            <TabsTrigger value="delete" className="gap-2 py-3">
+              <FileText className="w-4 h-4" /> Delete Pages
+            </TabsTrigger>
             <TabsTrigger value="split" className="gap-2 py-3">
               <Scissors className="w-4 h-4" /> Split
             </TabsTrigger>
@@ -35,12 +38,10 @@ function App() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Use the new component - clean one-liner! */}
           <TabsContent value="merge" className="mt-6">
             <MergeTab />
           </TabsContent>
 
-          {/* Other tabs (will be separated into files later) */}
           <TabsContent value="split" className="mt-6">
             <Card>
               <CardContent className="p-10 text-center text-slate-500">

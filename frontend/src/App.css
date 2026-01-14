@@ -4,7 +4,7 @@
   font-weight: 400;
   background-color: #f0f2f5;
   color: #213547;
-  direction: rtl; /* Hebrew support */
+  direction: rtl;
 }
 body {
   margin: 0;

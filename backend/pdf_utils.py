@@ -11,7 +11,7 @@ DIR_OUTPUT = "output_files"
 
 
 def get_pdf_info(file_path: str):
-    """Check the validity of a PDF file without UI"""
+
     if not os.path.exists(file_path):
         return {"valid": False, "error": "File not found"}
     try:
@@ -24,7 +24,7 @@ def get_pdf_info(file_path: str):
 
 
 def save_file_to_temp(upload_file, temp_folder="temp_uploads"):
-    """Save a file received from the client to disk"""
+
     os.makedirs(temp_folder, exist_ok=True)
     file_location = os.path.join(temp_folder, upload_file.filename)
     with open(file_location, "wb") as buffer:
@@ -33,7 +33,7 @@ def save_file_to_temp(upload_file, temp_folder="temp_uploads"):
 
 
 def parse_page_range(text: str) -> List[int]:
-    """Parse a page range string like '1-3,5,7-9' into a list of page numbers. [1,2,3,5,7,8,9]"""
+
     pages = set()
     if not text:
         return []
@@ -57,7 +57,7 @@ def parse_page_range(text: str) -> List[int]:
 
 
 def unlock_if_encrypted(reader: PdfReader, password: Optional[str], filename: str):
-    """Helper to handle decryption logic centrally"""
+
     if reader.is_encrypted:
         if not password:
             if not reader.decrypt(""):
@@ -68,7 +68,7 @@ def unlock_if_encrypted(reader: PdfReader, password: Optional[str], filename: st
 
 
 def merge_pdfs(file_paths: Dict[str, str], output_filename="merged.pdf") -> str:
-    """Perform the actual merge."""
+
     writer = PdfWriter()
     for path, password in file_paths.items():
         try:
@@ -92,7 +92,7 @@ def merge_pdfs(file_paths: Dict[str, str], output_filename="merged.pdf") -> str:
 
 
 def delete_pages(file_path: str, page_ranges: str, password: str = None) -> str:
-    """Delete specified pages from a PDF file."""
+
     reader = PdfReader(file_path)
     unlock_if_encrypted(reader, password, os.path.basename(file_path))
 
