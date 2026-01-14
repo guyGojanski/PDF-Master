@@ -1,31 +1,10 @@
 import { useState, useRef } from 'react';
 import axios from 'axios';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import {
-  FileText,
-  Upload,
-  X,
-  LockKeyhole,
-  AlertCircle,
-  CheckCircle2,
-  Lock,
-} from 'lucide-react';
+import { FileText, Upload, X, LockKeyhole, AlertCircle, CheckCircle2, Lock } from 'lucide-react';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
 
 export function MergeTab() {
@@ -67,9 +46,7 @@ export function MergeTab() {
     e.stopPropagation();
     dragCounter.current = 0;
     setIsDragging(false);
-    const droppedFiles = Array.from(e.dataTransfer.files).filter(
-      (f) => f.type === 'application/pdf'
-    );
+    const droppedFiles = Array.from(e.dataTransfer.files).filter((f) => f.type === 'application/pdf');
     if (files.length + droppedFiles.length > 20) {
       setErrorPopup('You cannot select more than 20 files.');
       return;

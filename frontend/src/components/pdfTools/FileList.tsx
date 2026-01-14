@@ -1,15 +1,4 @@
-/**
- * FileList component
- * ------------------
- * Displays a list of PDF files with their status (green/red/normal),
- * password status, and allows removing files or opening the password dialog for locked files.
- * Used in the merge tab to show all selected files and their current state.
- *
- * Props:
- * - files: Array of FileListItem (file, password status, error, color)
- * - onRemove: function to remove a file by index
- * - onUnlock: function to open password dialog for a file
- */
+
 import React from 'react';
 import { FileText, X, CheckCircle2, LockKeyhole } from 'lucide-react';
 import { Button } from '@/components/ui/button';

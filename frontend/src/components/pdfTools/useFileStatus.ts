@@ -1,11 +1,4 @@
-/**
- * useFileStatus hook
- * ------------------
- * Manages the color/status (green/red) for each file in the merge process.
- * Provides helpers to update, set locked, remove, and reset file row status.
- *
- * Usage: Call updateStatus after password checks, setLockedStatus after server lock response, etc.
- */
+
 import { useState } from 'react';
 
 export type RowColor = 'green' | 'red' | undefined;

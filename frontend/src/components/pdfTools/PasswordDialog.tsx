@@ -1,4 +1,4 @@
-// Password and verification state logic (from useFilePasswords)
+
 import { useState } from 'react';
 
 export function usePasswordState() {

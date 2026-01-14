@@ -1,15 +1,4 @@
-/**
- * FileDropZone component
- * ----------------------
- * Provides a drag-and-drop/upload area for PDF files with a dark overlay when dragging.
- * Calls onFilesAdded with the selected or dropped files.
- *
- * Props:
- * - onFilesAdded: function to handle added files
- * - disabled: disables the drop zone if true
- *
- * Usage: Use in merge, split, or any PDF tool to let users select/upload files.
- */
+
 import React, { useRef, useState } from 'react';
 import { Upload } from 'lucide-react';
 
