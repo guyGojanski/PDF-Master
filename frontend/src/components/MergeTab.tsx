@@ -10,13 +10,13 @@ import { FiEye, FiEyeOff } from 'react-icons/fi'
 export function MergeTab() {
     const [isDragging, setIsDragging] = useState(false)
     const dragCounter = useRef(0)
-  const [files, setFiles] = useState<File[]>([])
-  const [filePasswords, setFilePasswords] = useState<Record<string, string>>({}) 
-  const [lockedFiles, setLockedFiles] = useState<string[]>([])
-  const [isUploading, setIsUploading] = useState(false)
-  const [status, setStatus] = useState<{type: 'success' | 'error' | 'loading' | '', message: string}>({type: '', message: ''})
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
-  const [fileToUnlock, setFileToUnlock] = useState("") 
+    const [files, setFiles] = useState<File[]>([])
+    const [filePasswords, setFilePasswords] = useState<Record<string, string>>({}) 
+    const [lockedFiles, setLockedFiles] = useState<string[]>([])
+    const [isUploading, setIsUploading] = useState(false)
+    const [status, setStatus] = useState<{type: 'success' | 'error' | 'loading' | '', message: string}>({type: '', message: ''})
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
+    const [fileToUnlock, setFileToUnlock] = useState("") 
   const [tempPassword, setTempPassword] = useState("")
   const [passwordVerified, setPasswordVerified] = useState<Record<string, boolean>>({})
   const [passwordCheckError, setPasswordCheckError] = useState<string | null>(null)
@@ -26,7 +26,6 @@ export function MergeTab() {
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Drag and drop handlers
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     e.stopPropagation()
@@ -127,7 +126,6 @@ export function MergeTab() {
     setIsUploading(true)
     setStatus({type: 'loading', message: "Processing files... ⏳"})
     setLockedFiles([])
-    // Set row status: green for files without password, red for files with password
     const newRowStatus: Record<string, 'green' | 'red'> = {}
     files.forEach(f => {
       if (filePasswords[f.name]) {
@@ -184,7 +182,6 @@ export function MergeTab() {
                 type: 'error', 
                  message: `${lockedList.length} locked files found. Click the red locks to enter a password.`
             })
-            // Set row status: red for locked, green for others
             setRowStatus(prev => {
               const copy = { ...prev }
               lockedList.forEach(name => { copy[name] = 'red' })
@@ -310,7 +307,6 @@ export function MergeTab() {
             {status.message}
           </div>
         )}
-        {/* Error popup for file limit */}
         {errorPopup && (
           <div className="fixed top-8 left-1/2 -translate-x-1/2 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2">
             <AlertCircle className="w-5 h-5" />
@@ -341,7 +337,7 @@ export function MergeTab() {
                   onChange={(e) => setTempPassword(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
                   autoFocus
-                  className="pr-10" // add padding right for the button
+                  className="pr-10" 
                 />
                 <button
                   type="button"
