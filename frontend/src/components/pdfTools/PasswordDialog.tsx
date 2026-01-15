@@ -1,69 +1,3 @@
-
-import { useState } from 'react';
-
-export function usePasswordState() {
-  const [filePasswords, setFilePasswords] = useState<Record<string, string>>(
-    {}
-  );
-  const [passwordVerified, setPasswordVerified] = useState<
-    Record<string, boolean>
-  >({});
-
-  function setPassword(fileName: string, password: string) {
-    setFilePasswords((prev) => ({ ...prev, [fileName]: password }));
-  }
-
-  function setVerified(fileName: string, verified: boolean) {
-    setPasswordVerified((prev) => ({ ...prev, [fileName]: verified }));
-  }
-
-  function removePassword(fileName: string) {
-    setFilePasswords((prev) => {
-      const copy = { ...prev };
-      delete copy[fileName];
-      return copy;
-    });
-    setPasswordVerified((prev) => {
-      const copy = { ...prev };
-      delete copy[fileName];
-      return copy;
-    });
-  }
-
-  function resetPasswords() {
-    setFilePasswords({});
-    setPasswordVerified({});
-  }
-
-  return {
-    filePasswords,
-    passwordVerified,
-    setPassword,
-    setVerified,
-    removePassword,
-    resetPasswords,
-  };
-}
-/**
- * PasswordDialog component
- * -----------------------
- * Modal dialog for entering and verifying a password for a locked PDF file.
- * Handles password input, show/hide toggle, error display, and submit/cancel actions.
- *
- * Props:
- * - open: whether the dialog is open
- * - fileName: name of the file being unlocked
- * - password: current password value
- * - showPassword: show/hide password state
- * - passwordCheckError: error message to display
- * - onPasswordChange: handler for password input change
- * - onShowPasswordToggle: handler for toggling password visibility
- * - onSubmit: handler for submitting the password
- * - onCancel: handler for closing the dialog
- *
- * Usage: Use in merge, split, or any PDF tool that needs password entry for locked files.
- */
-import React from 'react';
 import {
   Dialog,
   DialogContent,
@@ -76,32 +10,65 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Lock } from 'lucide-react';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
+import { useState } from 'react';
+import axios from 'axios';
 
 interface PasswordDialogProps {
   open: boolean;
-  fileName: string;
-  password: string;
-  showPassword: boolean;
-  passwordCheckError: string | null;
-  onPasswordChange: (value: string) => void;
-  onShowPasswordToggle: () => void;
-  onSubmit: () => void;
+  file: File | null;
+  onSuccess: (password: string) => void;
   onCancel: () => void;
 }
 
 export function PasswordDialog({
   open,
-  fileName,
-  password,
-  showPassword,
-  passwordCheckError,
-  onPasswordChange,
-  onShowPasswordToggle,
-  onSubmit,
+  file,
+  onSuccess,
   onCancel,
 }: PasswordDialogProps) {
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordCheckError, setPasswordCheckError] = useState<string | null>(
+    null
+  );
+  const [isChecking, setIsChecking] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!password || !file) return;
+    setIsChecking(true);
+    setPasswordCheckError(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('password', password);
+      const res = await axios.post(
+        'http://127.0.0.1:8000/check-password',
+        formData
+      );
+      if (res.data.ok) {
+        setPassword('');
+        setPasswordCheckError(null);
+        setIsChecking(false);
+        onSuccess(password);
+      } else {
+        setPasswordCheckError(res.data.error || 'Incorrect password');
+        setIsChecking(false);
+      }
+    } catch (err: any) {
+      setPasswordCheckError('Error checking password');
+      setIsChecking(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setPassword('');
+    setPasswordCheckError(null);
+    setShowPassword(false);
+    onCancel();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onCancel}>
+    <Dialog open={open} onOpenChange={handleCancel}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -111,7 +78,7 @@ export function PasswordDialog({
           <DialogDescription>
             Enter the password for the file:
             <div className="mt-1 font-bold text-slate-800 break-all" dir="ltr">
-              {fileName}
+              {file?.name || ''}
             </div>
           </DialogDescription>
         </DialogHeader>
@@ -121,17 +88,19 @@ export function PasswordDialog({
               type={showPassword ? 'text' : 'password'}
               placeholder="Enter password..."
               value={password}
-              onChange={(e) => onPasswordChange(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && onSubmit()}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
               autoFocus
               className="pr-10"
+              disabled={isChecking}
             />
             <button
               type="button"
               className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-blue-600"
-              onClick={onShowPasswordToggle}
+              onClick={() => setShowPassword((v) => !v)}
               tabIndex={-1}
               aria-label={showPassword ? 'Hide password' : 'Show password'}
+              disabled={isChecking}
             >
               {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
             </button>
@@ -141,10 +110,19 @@ export function PasswordDialog({
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onCancel}>
+          <Button
+            variant="outline"
+            onClick={handleCancel}
+            disabled={isChecking}
+          >
             Cancel
           </Button>
-          <Button onClick={onSubmit}>Check Password</Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={isChecking || !password || !file}
+          >
+            {isChecking ? 'Checking...' : 'Check Password'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
