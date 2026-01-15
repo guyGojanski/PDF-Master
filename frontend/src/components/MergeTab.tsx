@@ -14,6 +14,7 @@ import { FileList } from '@/components/pdfTools/FileList';
 import { useFileStatus } from '@/components/pdfTools/useFileStatus';
 import { useFileValidation } from '@/components/pdfTools/useFileValidation';
 import { ErrorPopup } from '@/components/pdfTools/ErrorPopup';
+import { SpinnerItem } from '@/components/ui/SpinnerItem';
 export function MergeTab() {
   const [files, setFiles] = useState<File[]>([]);
   const [filePasswords, setFilePasswords] = useState<Record<string, string>>(
@@ -34,8 +35,8 @@ export function MergeTab() {
   const fileStatus = useFileStatus();
   const fileValidation = useFileValidation();
   const handleFilesAdded = async (newFiles: File[]) => {
-    if (files.length + newFiles.length > 20) {
-      setErrorPopup('You cannot select more than 20 files.');
+    if (files.length + newFiles.length > MAX_FILES) {
+      setErrorPopup(`You cannot select more than ${MAX_FILES} files.`);
       return;
     }
     setFiles((prev) => [...prev, ...newFiles]);
@@ -46,6 +47,7 @@ export function MergeTab() {
     await fileValidation.validateFiles(newFiles);
   };
 
+  const MAX_FILES = 150;
   // Ensure lockedFiles always matches the current files list
   const handleSetFiles = (newFiles: File[]) => {
     setFiles(newFiles);
@@ -94,7 +96,7 @@ export function MergeTab() {
   };
   const canMerge =
     files.length > 0 &&
-    files.length <= 20 &&
+    files.length <= MAX_FILES &&
     files.every((f) => {
       if (filePasswords[f.name]) {
         return passwordVerified[f.name];
@@ -113,6 +115,7 @@ export function MergeTab() {
     });
     formData.append('passwords', JSON.stringify(filePasswords));
     try {
+     
       const response = await axios.post(
         'http://127.0.0.1:8000/merge',
         formData,
@@ -139,6 +142,7 @@ export function MergeTab() {
       console.error('Merge error:', error);
       let errorData: any = {};
       if (error.response?.data instanceof Blob) {
+        //await new Promise((res) => setTimeout(res, 10000)); test the upload delay
         try {
           const text = await error.response.data.text();
           errorData = JSON.parse(text);
@@ -184,7 +188,20 @@ export function MergeTab() {
       </CardHeader>
       <CardContent className="space-y-6 relative">
         <FileDropZone onFilesAdded={handleFilesAdded} disabled={isUploading} />
-        {files.length > 0 && (
+        {isUploading ? (
+          <div className="flex justify-center py-8">
+            <SpinnerItem
+              title="Processing..."
+              description={
+                files.length > 0
+                  ? `${files.length} file${files.length > 1 ? 's' : ''} being processed...`
+                  : 'Processing...'
+              }
+              progress={0}
+              onCancel={() => setIsUploading(false)}
+            />
+          </div>
+        ) : files.length > 0 && (
           <div className="space-y-2">
             <h4 className="text-sm font-medium text-slate-700">
               Selected files ({files.length}):
@@ -222,7 +239,7 @@ export function MergeTab() {
               }
               className="w-full mt-4 bg-blue-600 hover:bg-blue-700"
             >
-              {isUploading ? 'Processing...' : 'Merge files now 🚀'}
+              Merge files now 🚀
             </Button>
           </div>
         )}
