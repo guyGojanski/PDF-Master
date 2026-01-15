@@ -2,8 +2,67 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { FileText, Scissors, Minimize, Lock, Unlock } from 'lucide-react';
 import { MergeTab } from './components/MergeTab';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import './App.css';
+import ServerStatus from './components/ServerStatus';
 
 function App() {
+  const [status, setStatus] = useState<string>('Checking server connection...');
+  const [isConnected, setIsConnected] = useState<boolean | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState<number>(20);
+
+  const checkConnection = async () => {
+    try {
+      const response = await axios.get('http://127.0.0.1:8000/');
+      setStatus(`Connected! Server says: ${response.data.message}`);
+      setIsConnected(true);
+    } catch (error) {
+      setStatus('Error: No connection to server');
+      console.error(error);
+      setIsConnected(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isConnected === true) return;
+    let countdown: ReturnType<typeof setTimeout>;
+    let poll: ReturnType<typeof setTimeout>;
+    setSecondsLeft(20);
+    checkConnection();
+    countdown = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) return 20;
+        return prev - 1;
+      });
+    }, 1000);
+    poll = setInterval(() => {
+      checkConnection();
+      setSecondsLeft(20);
+    }, 20000);
+    return () => {
+      clearInterval(countdown);
+      clearInterval(poll);
+    };
+  }, [isConnected]);
+
+  if (isConnected !== true) {
+    return (
+      <div className="min-h-screen bg-slate-50 p-8" dir="ltr">
+        <div className="max-w-4xl mx-auto flex flex-col items-center justify-center h-full">
+          <div className="mb-4 text-center text-slate-600 font-medium">
+            Refreshing in {secondsLeft} second{secondsLeft !== 1 ? 's' : ''}...
+          </div>
+          <ServerStatus
+            isConnected={isConnected}
+            status={status}
+            onCheck={checkConnection}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 p-8" dir="ltr">
       <div className="max-w-4xl mx-auto space-y-8">
