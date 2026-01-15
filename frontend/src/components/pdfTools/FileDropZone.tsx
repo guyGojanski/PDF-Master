@@ -1,4 +1,3 @@
-
 import React, { useRef, useState } from 'react';
 import { Upload } from 'lucide-react';
 
@@ -8,7 +7,6 @@ interface FileDropZoneProps {
 }
 
 export function FileDropZone({ onFilesAdded, disabled }: FileDropZoneProps) {
-  // Drag overlay logic (from useDragOverlay)
   const [isDragging, setIsDragging] = useState(false);
   const dragCounter = useRef(0);
 
@@ -91,7 +89,7 @@ export function FileDropZone({ onFilesAdded, disabled }: FileDropZoneProps) {
       <div className="flex flex-col items-center gap-2">
         <Upload className="h-10 w-10 text-blue-500" />
         <p className="text-sm font-medium text-slate-600">
-          Drag files here or click to select
+          Drag PDF files here or click to select
         </p>
       </div>
       {isDragging && (
