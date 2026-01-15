@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
 import ServerStatus from './components/ServerStatus';
-import { API_URL } from './config'; 
+import { API_URL } from './config';
 
 function App() {
   const [status, setStatus] = useState<string>('Checking server connection...');

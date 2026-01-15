@@ -42,10 +42,7 @@ export function PasswordDialog({
       const formData = new FormData();
       formData.append('file', file);
       formData.append('password', password);
-      const res = await axios.post(
-        `${API_URL}/check-password`,
-        formData
-      );
+      const res = await axios.post(`${API_URL}/check-password`, formData);
       if (res.data.ok) {
         setPassword('');
         setPasswordCheckError(null);
@@ -106,9 +103,9 @@ export function PasswordDialog({
               {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
             </button>
           </div>
-            {passwordCheckError && (
-              <div className="text-red-600 text-sm">{passwordCheckError}</div>
-            )}
+          {passwordCheckError && (
+            <div className="text-red-600 text-sm">{passwordCheckError}</div>
+          )}
         </div>
         <DialogFooter>
           <Button

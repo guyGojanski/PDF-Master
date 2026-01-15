@@ -23,10 +23,7 @@ export function useFileValidation() {
       formData.append('files', file);
     });
     try {
-      const res = await axios.post(
-        `${API_URL}/validate-pdf`,
-        formData
-      );
+      const res = await axios.post(`${API_URL}/validate-pdf`, formData);
       const results = res.data;
       files.forEach((file) => {
         const result = results[file.name];
