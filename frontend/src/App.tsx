@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
 import ServerStatus from './components/ServerStatus';
+import { API_URL } from './config'; 
 
 function App() {
   const [status, setStatus] = useState<string>('Checking server connection...');
@@ -14,7 +15,7 @@ function App() {
 
   const checkConnection = async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:8000/');
+      const response = await axios.get(`${API_URL}/`);
       setStatus(`Connected! Server says: ${response.data.message}`);
       setIsConnected(true);
     } catch (error) {

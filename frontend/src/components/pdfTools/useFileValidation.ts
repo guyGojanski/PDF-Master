@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
+import { API_URL } from '@/config';
 
 export interface FileValidationResult {
   brokenFiles: string[];
@@ -23,7 +24,7 @@ export function useFileValidation() {
     });
     try {
       const res = await axios.post(
-        'http://127.0.0.1:8000/validate-pdf',
+        `${API_URL}/validate-pdf`,
         formData
       );
       const results = res.data;

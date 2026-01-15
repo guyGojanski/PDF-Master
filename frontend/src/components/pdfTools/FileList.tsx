@@ -33,7 +33,6 @@ export function FileList({
     const removedFile = files[index].file.name;
     newFiles.splice(index, 1);
     setFiles(newFiles);
-    // If the removed file was locked, and now no locked files remain, clear error
     if (lockedFiles.includes(removedFile)) {
       const remainingLocked = lockedFiles.filter((f) => f !== removedFile);
       if (remainingLocked.length === 0 && onClearError) {

@@ -12,6 +12,7 @@ import { Lock } from 'lucide-react';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { useState } from 'react';
 import axios from 'axios';
+import { API_URL } from '@/config';
 
 interface PasswordDialogProps {
   open: boolean;
@@ -42,7 +43,7 @@ export function PasswordDialog({
       formData.append('file', file);
       formData.append('password', password);
       const res = await axios.post(
-        'http://127.0.0.1:8000/check-password',
+        `${API_URL}/check-password`,
         formData
       );
       if (res.data.ok) {
@@ -105,9 +106,9 @@ export function PasswordDialog({
               {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
             </button>
           </div>
-          {passwordCheckError && (
-            <div className="text-red-600 text-sm">{passwordCheckError}</div>
-          )}
+            {passwordCheckError && (
+              <div className="text-red-600 text-sm">{passwordCheckError}</div>
+            )}
         </div>
         <DialogFooter>
           <Button

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
+import { API_URL } from '@/config';
 import {
   Card,
   CardContent,
@@ -15,7 +16,9 @@ import { useFileStatus } from '@/components/pdfTools/useFileStatus';
 import { useFileValidation } from '@/components/pdfTools/useFileValidation';
 import { ErrorPopup } from '@/components/pdfTools/ErrorPopup';
 import { SpinnerItem } from '@/components/ui/SpinnerItem';
+import { MAX_FILES } from '@/config';
 export function MergeTab() {
+
   const [files, setFiles] = useState<File[]>([]);
   const [filePasswords, setFilePasswords] = useState<Record<string, string>>(
     {}
@@ -47,15 +50,12 @@ export function MergeTab() {
     await fileValidation.validateFiles(newFiles);
   };
 
-  const MAX_FILES = 150;
-  // Ensure lockedFiles always matches the current files list
   const handleSetFiles = (newFiles: File[]) => {
     setFiles(newFiles);
     setLockedFiles((prevLocked) => {
       const filtered = prevLocked.filter((name: string) =>
         newFiles.some((f) => f.name === name)
       );
-      // If no locked files remain, clear error
       setStatus((prev) => {
         if (prev.type === 'error' && filtered.length === 0) {
           return { type: '', message: '' };
@@ -96,7 +96,7 @@ export function MergeTab() {
   };
   const canMerge =
     files.length > 0 &&
-    files.length <= MAX_FILES &&
+    files.length <= 20 &&
     files.every((f) => {
       if (filePasswords[f.name]) {
         return passwordVerified[f.name];
@@ -117,7 +117,7 @@ export function MergeTab() {
     try {
      
       const response = await axios.post(
-        'http://127.0.0.1:8000/merge',
+        `${API_URL}/merge`,
         formData,
         {
           responseType: 'blob',
@@ -142,7 +142,7 @@ export function MergeTab() {
       console.error('Merge error:', error);
       let errorData: any = {};
       if (error.response?.data instanceof Blob) {
-        //await new Promise((res) => setTimeout(res, 10000)); test the upload delay
+        await new Promise((res) => setTimeout(res, 5000));
         try {
           const text = await error.response.data.text();
           errorData = JSON.parse(text);
@@ -243,7 +243,6 @@ export function MergeTab() {
             </Button>
           </div>
         )}
-        {/* Error message for locked files is now handled in FileList */}
         {errorPopup && (
           <ErrorPopup
             message={errorPopup}
