@@ -10,12 +10,12 @@ export function FileDropZone({ onFilesAdded, disabled }: FileDropZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
   const dragCounter = useRef(0);
 
-  function handleDragEnter(e?: React.DragEvent) {
+  function handleDragEnter() {
     dragCounter.current++;
     setIsDragging(true);
   }
 
-  function handleDragLeave(e?: React.DragEvent) {
+  function handleDragLeave() {
     dragCounter.current--;
     if (dragCounter.current <= 0) {
       setIsDragging(false);
@@ -36,13 +36,13 @@ export function FileDropZone({ onFilesAdded, disabled }: FileDropZoneProps) {
   const handleDragEnterZone = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    handleDragEnter(e);
+    handleDragEnter();
   };
 
   const handleDragLeaveZone = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    handleDragLeave(e);
+    handleDragLeave();
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
