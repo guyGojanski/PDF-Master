@@ -1,7 +1,6 @@
 import os
 import json
 import io
-import PyPDF2
 from pypdf import PdfReader
 from typing import List, Dict
 from fastapi import (
@@ -73,7 +72,8 @@ async def check_password_endpoint(
 
 @app.post("/validate-pdf")
 async def validate_pdf_endpoint(files: List[UploadFile] = File(...)):
-    print(f"/validate-pdf called with {len(files)} files.")
+    print(f"/validate-pdf called with {len(files)} files.")  # Debug log
+
     results = {}
     for file in files:
         error_type = None
@@ -143,7 +143,7 @@ async def check_files_lock(files: List[UploadFile], passwords_dict: Dict[str, st
         content = await file.read()
         await file.seek(0)
         try:
-            pdf_reader = PyPDF2.PdfReader(io.BytesIO(content))
+            pdf_reader = PdfReader(io.BytesIO(content))
             if pdf_reader.is_encrypted:
                 file_password = passwords_dict.get(file.filename)
                 if not file_password or not pdf_reader.decrypt(file_password):
@@ -198,36 +198,45 @@ async def merge_pdfs_endpoint(
     background_tasks: BackgroundTasks,
     files: List[UploadFile] = File(...),
     passwords: str = Form("{}"),
+    rotations: str = Form("{}"),
 ):
-    saved_paths_map = {}
+
     saved_paths_list = []
-    unlocked_paths_list = []
+
     try:
         passwords_dict = json.loads(passwords)
+        rotations_dict = json.loads(rotations)
     except:
         passwords_dict = {}
+        rotations_dict = {}
+
     try:
         await check_files_lock(files, passwords_dict)
+        merge_items = []
+
         for file in files:
             await validate_file(file)
-            path = save_file_to_temp(file)
+            path = save_file_to_temp(file, TEMP_FOLDER)
             saved_paths_list.append(path)
-            file_password = passwords_dict.get(file.filename)
-            if file_password:
-                unlocked_path = unlock_pdf(path, file_password)
-                unlocked_paths_list.append(unlocked_path)
-            else:
-                unlocked_paths_list.append(path)
-        if not unlocked_paths_list:
+            file_pass = passwords_dict.get(file.filename)
+            file_rot = rotations_dict.get(file.filename, 0)
+            merge_items.append(
+                {"path": path, "password": file_pass, "rotation": int(file_rot)}
+            )
+
+        if not merge_items:
             return {"error": "No valid PDF files uploaded."}
-        merge_files_path = merge_pdfs({p: None for p in unlocked_paths_list})
-        files_to_delete = saved_paths_list + unlocked_paths_list + [merge_files_path]
+
+        merge_files_path = merge_pdfs(merge_items)
+        files_to_delete = saved_paths_list + [merge_files_path]
         background_tasks.add_task(cleanup_files, files_to_delete)
+
         return FileResponse(
             path=merge_files_path, filename="merged.pdf", media_type="application/pdf"
         )
+
     except Exception as e:
-        return handle_pdf_error(e, saved_paths_list + unlocked_paths_list)
+        return handle_pdf_error(e, saved_paths_list)
 
 
 @app.post("/delete-pages")
@@ -238,19 +247,26 @@ async def delete_pages_endpoint(
     file: UploadFile = File(...),
     pages: str = Form(...),
     passwords: str = Form("{}"),
+    rotations: str = Form("{}"),
 ):
     saved_path = None
+
     try:
         passwords_dict = json.loads(passwords)
+        rotations_dict = json.loads(rotations)
         password = passwords_dict.get(file.filename)
+        rotation = int(rotations_dict.get(file.filename, 0))
+
     except:
         passwords_dict = {}
         password = None
+        rotation = 0
+
     try:
         await validate_file(file)
         await check_files_lock([file], passwords_dict)
         saved_path = save_file_to_temp(file)
-        new_pdf_path = delete_pages(saved_path, pages, password)
+        new_pdf_path = delete_pages(saved_path, pages, password, rotation)
         pages_to_delete = [saved_path, new_pdf_path]
         background_tasks.add_task(cleanup_files, pages_to_delete)
         return FileResponse(
@@ -268,19 +284,25 @@ async def split_pdf_endpoint(
     file: UploadFile = File(...),
     ranges: str = Form(...),
     passwords: str = Form("{}"),
+    rotations: str = Form("{}"),
 ):
     saved_path = None
     try:
         passwords_dict = json.loads(passwords)
+        rotations_dict = json.loads(rotations)
         password = passwords_dict.get(file.filename)
+        rotation = int(rotations_dict.get(file.filename, 0))
+
     except:
         passwords_dict = {}
         password = None
+        rotation = 0
+
     try:
         await validate_file(file)
         await check_files_lock([file], passwords_dict)
         saved_path = save_file_to_temp(file)
-        output_path = split_pdf(saved_path, ranges, password)
+        output_path = split_pdf(saved_path, ranges, password, rotation)
         if output_path.endswith(".zip"):
             media_type = "application/zip"
         else:
@@ -300,19 +322,24 @@ async def compress_pdf_endpoint(
     file: UploadFile = File(...),
     level: str = Form("recommended"),
     passwords: str = Form("{}"),
+    rotations: str = Form("{}"),
 ):
     saved_path = None
     try:
         passwords_dict = json.loads(passwords)
+        rotations_dict = json.loads(rotations)
         password = passwords_dict.get(file.filename)
+        rotation = int(rotations_dict.get(file.filename, 0))
+
     except:
         passwords_dict = {}
         password = None
+        rotation = 0
     try:
         await validate_file(file)
         await check_files_lock([file], passwords_dict)
         saved_path = save_file_to_temp(file)
-        compressed_path = compress_pdf(saved_path, level, password)
+        compressed_path = compress_pdf(saved_path, level, password, rotation)
         background_tasks.add_task(cleanup_files, [saved_path, compressed_path])
         return FileResponse(
             path=compressed_path,
@@ -331,22 +358,32 @@ async def lock_pdf_endpoint(
     files: List[UploadFile] = File(...),
     password: str = Form(...),
     passwords: str = Form("{}"),
+    rotations: str = Form("{}"),
 ):
-    saved_paths_map = {}
     saved_paths_list = []
     try:
         old_passwords_dict = json.loads(passwords)
+        rotations_dict = json.loads(rotations)
+
     except:
         old_passwords_dict = {}
+        rotations_dict = {}
+
     try:
         await check_files_lock(files, old_passwords_dict)
+        lock_items = []
+
         for file in files:
             await validate_file(file)
             path = save_file_to_temp(file)
             saved_paths_list.append(path)
             old_pass = old_passwords_dict.get(file.filename)
-            saved_paths_map[path] = old_pass
-        output_path = lock_pdfs(saved_paths_map, password)
+            file_rot = rotations_dict.get(file.filename, 0)
+            lock_items.append(
+                {"path": path, "password": old_pass, "rotation": int(file_rot)}
+            )
+
+        output_path = lock_pdfs(lock_items, password)
         if output_path.endswith(".zip"):
             media_type = "application/zip"
             filename = "locked_files.zip"
@@ -366,12 +403,20 @@ async def unlock_pdf_endpoint(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     password: str = Form(None),
+    rotations: str = Form("{}"),
 ):
     saved_path = None
     try:
+        rotations_dict = json.loads(rotations)
+        rotation = int(rotations_dict.get(file.filename, 0))
+
+    except:
+        rotation = 0
+
+    try:
         await validate_file(file)
         saved_path = save_file_to_temp(file)
-        output_path = unlock_pdf(saved_path, password)
+        output_path = unlock_pdf(saved_path, password, rotation)
         background_tasks.add_task(cleanup_files, [saved_path, output_path])
         return FileResponse(
             path=output_path,

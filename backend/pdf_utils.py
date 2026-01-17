@@ -4,7 +4,7 @@ import zipfile
 import fitz
 import shutil
 from pypdf import PdfReader, PdfWriter
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 
 DIR_OUTPUT = "output_files"
 
@@ -61,25 +61,43 @@ def unlock_if_encrypted(reader: PdfReader, password: Optional[str], filename: st
                 raise ValueError(f"INVALID_PASSWORD:{filename}")
 
 
-def merge_pdfs(file_paths: Dict[str, str], output_filename="merged.pdf") -> str:
+def page_rotate(writer: PdfWriter, page, rotation: int):
+    if rotation != 0:
+        page.rotate(rotation)
+    writer.add_page(page)
+
+
+def merge_pdfs(items: List[Dict[str, Any]], output_filename="merged.pdf") -> str:
     writer = PdfWriter()
-    for path, password in file_paths.items():
+
+    for item in items:
+        path = item["path"]
+        password = item.get("password")
+        rotation = item.get("rotation", 0)
+
         try:
             reader = PdfReader(path)
             unlock_if_encrypted(reader, password, os.path.basename(path))
+
             for page in reader.pages:
-                writer.add_page(page)
+                page_rotate(writer, page, rotation)
+
         except Exception as e:
             print(f"Error merging {path}: {e}")
             raise e
+
     os.makedirs(DIR_OUTPUT, exist_ok=True)
     output_path = os.path.join(DIR_OUTPUT, output_filename)
+
     with open(output_path, "wb") as f:
         writer.write(f)
+
     return output_path
 
 
-def delete_pages(file_path: str, page_ranges: str, password: str = None) -> str:
+def delete_pages(
+    file_path: str, page_ranges: str, password: str = None, rotation: int = 0
+) -> str:
     reader = PdfReader(file_path)
     unlock_if_encrypted(reader, password, os.path.basename(file_path))
     writer = PdfWriter()
@@ -87,9 +105,10 @@ def delete_pages(file_path: str, page_ranges: str, password: str = None) -> str:
     indices_to_remove = [page - 1 for page in pages_to_remove]
     for i in range(len(reader.pages)):
         if i not in indices_to_remove:
-            writer.add_page(reader.pages[i])
-    if len(writer.pages) == 0:
+            page_rotate(writer, reader.pages[i], rotation)
+
         raise ValueError("Cannot delete all pages from the PDF")
+
     output_filename = f"deleted_{os.path.basename(file_path)}"
     os.makedirs(DIR_OUTPUT, exist_ok=True)
     output_path = os.path.join(DIR_OUTPUT, output_filename)
@@ -98,7 +117,9 @@ def delete_pages(file_path: str, page_ranges: str, password: str = None) -> str:
     return output_path
 
 
-def split_pdf(file_path: str, page_ranges: str, password: str = None) -> str:
+def split_pdf(
+    file_path: str, page_ranges: str, password: str = None, rotation: int = 0
+) -> str:
     ranges_list = [r.strip() for r in page_ranges.split(",")]
     output_ranges = []
     reader = PdfReader(file_path)
@@ -110,37 +131,67 @@ def split_pdf(file_path: str, page_ranges: str, password: str = None) -> str:
         pages = [p - 1 for p in pages_in_range]
         writer = PdfWriter()
         flag = False
+
         for p in pages:
             if 0 <= p < len(reader.pages):
-                writer.add_page(reader.pages[p])
+                page_rotate(writer, reader.pages[p], rotation)
                 flag = True
+
         if flag:
             range_name = f"{base_name}_part{i+1}.pdf"
             range_name_path = os.path.join(DIR_OUTPUT, range_name)
+
             with open(range_name_path, "wb") as f:
                 writer.write(f)
             output_ranges.append(range_name_path)
+
     if not output_ranges:
         raise ValueError("No valid pages found for the specified ranges.")
+
     if len(output_ranges) == 1:
         return output_ranges[0]
+
     zip_filename = f"{base_name}_splits.zip"
     zip_path = os.path.join(DIR_OUTPUT, zip_filename)
+
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
         for file in output_ranges:
             zipf.write(file, os.path.basename(file))
             os.remove(file)
+
     return zip_path
 
 
 def compress_pdf(
-    file_path: str, level: str = "recommended", password: str = None
+    file_path: str, level: str = "recommended", password: str = None, rotation: int = 0
 ) -> str:
+
+    source_path = file_path
+    temp_rotated_path = None
+
     try:
         reader = PdfReader(file_path)
         unlock_if_encrypted(reader, password, os.path.basename(file_path))
+        if rotation != 0:
+            writer = PdfWriter()
+            for page in reader.pages:
+                page_rotate(writer, page, rotation)
+
+            temp_rotated_path = f"{file_path}_rotated.pdf"
+            with open(temp_rotated_path, "wb") as f:
+                writer.write(f)
+
+            source_path = temp_rotated_path
+            password = None
+
     except ValueError as e:
         raise e
+
+    except Exception as e:
+        if temp_rotated_path and os.path.exists(temp_rotated_path):
+            os.remove(temp_rotated_path)
+        raise RuntimeError(f"Pre-processing failed: {e}")
+
     compression_settings = {
         "extreme": "/screen",
         "recommended": "/ebook",
@@ -148,11 +199,16 @@ def compress_pdf(
     }
     ghostscript_setting = compression_settings.get(level, "/ebook")
     ghostscript = shutil.which("gswin64c") or shutil.which("gs")
+
     if not ghostscript:
+        if temp_rotated_path and os.path.exists(temp_rotated_path):
+            os.remove(temp_rotated_path)
         raise EnvironmentError("Ghostscript not found.")
+
     output_filename = f"compressed_{level}_{os.path.basename(file_path)}"
     os.makedirs(DIR_OUTPUT, exist_ok=True)
     output_path = os.path.join(DIR_OUTPUT, output_filename)
+
     command = [
         ghostscript,
         "-sDEVICE=pdfwrite",
@@ -165,55 +221,83 @@ def compress_pdf(
     ]
     if password:
         command.append(f"-sPDFPassword={password}")
-    command.append(file_path)
+
+    command.append(source_path)
     try:
         subprocess.run(command, check=True)
-        return output_path
+
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"PDF compression failed: {e}")
 
+    finally:
+        if temp_rotated_path and os.path.exists(temp_rotated_path):
+            os.remove(temp_rotated_path)
 
-def lock_pdfs(file_paths: Dict[str, str], new_password: str) -> str:
+    return output_path
+
+
+def lock_pdfs(items: List[Dict[str, Any]], new_password: str) -> str:
     output_files = []
     os.makedirs(DIR_OUTPUT, exist_ok=True)
-    for path, old_password in file_paths.items():
+
+    for item in items:
+
+        path = item["path"]
+        old_password = item.get("password")
+        rotation = item.get("rotation", 0)
+
         try:
             reader = PdfReader(path)
             unlock_if_encrypted(reader, old_password, os.path.basename(path))
             writer = PdfWriter()
+
             for page in reader.pages:
-                writer.add_page(page)
+                page_rotate(writer, page, rotation)
+
             writer.encrypt(user_password=new_password, algorithm="AES-256")
+
             filename = f"locked_{os.path.basename(path)}"
             out_path = os.path.join(DIR_OUTPUT, filename)
+
             with open(out_path, "wb") as f:
                 writer.write(f)
+
             output_files.append(out_path)
+
         except Exception as e:
             print(f"Error locking {path}: {e}")
             raise e
+
     if not output_files:
         raise ValueError("Failed to lock any files.")
+
     if len(output_files) == 1:
         return output_files[0]
+
     zip_filename = "locked_files.zip"
     zip_path = os.path.join(DIR_OUTPUT, zip_filename)
+
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
         for f in output_files:
             zipf.write(f, os.path.basename(f))
             os.remove(f)
+
     return zip_path
 
 
-def unlock_pdf(file_path: str, password: str = None) -> str:
+def unlock_pdf(file_path: str, password: str = None, rotation: int = 0) -> str:
     reader = PdfReader(file_path)
     unlock_if_encrypted(reader, password, os.path.basename(file_path))
     writer = PdfWriter()
+
     for page in reader.pages:
-        writer.add_page(page)
+        page_rotate(writer, page, rotation)
+
     output_filename = f"unlocked_{os.path.basename(file_path)}"
     os.makedirs(DIR_OUTPUT, exist_ok=True)
+
     output_path = os.path.join(DIR_OUTPUT, output_filename)
     with open(output_path, "wb") as f:
         writer.write(f)
+
     return output_path
