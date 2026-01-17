@@ -1,12 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  FileText,
-  Trash2,
-  RotateCw,
-  Lock,
-  AlertCircle,
-  CheckCircle2,
-} from 'lucide-react';
+import { FileText, Trash2, RotateCw, Lock, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { truncateFilename, formatFileSize } from '@/lib/formatters';
 import { getPdfThumbnailUrl } from '@/lib/pdfThumbnails';
@@ -17,10 +10,13 @@ interface FileCardProps {
   onDelete: () => void;
   onRotate?: () => void;
   onUnlock?: () => void;
+  onThumbnailError?: () => void;
   isLocked?: boolean;
   isError?: boolean;
   isVerified?: boolean;
   errorMessage?: string;
+  password?: string;
+  rotation?: number;
 }
 
 export function FileCard({
@@ -29,35 +25,41 @@ export function FileCard({
   onDelete,
   onRotate,
   onUnlock,
+  onThumbnailError,
   isLocked,
   isError,
   isVerified,
   errorMessage,
+  password,
+  rotation = 0,
 }: FileCardProps) {
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
-    setThumbnailUrl(null);
 
-    if (!isLocked && !isError && file.type === 'application/pdf') {
-      getPdfThumbnailUrl(file)
+    if (
+      (!isLocked || password) &&
+      !isError &&
+      file.type === 'application/pdf'
+    ) {
+      getPdfThumbnailUrl(file, password)
         .then((url) => {
           if (isMounted) setThumbnailUrl(url);
         })
         .catch(() => {
-          console.warn('Failed thumbnail generation:', file.name);
+          if (!password && onThumbnailError) onThumbnailError();
         });
     }
 
     return () => {
       isMounted = false;
     };
-  }, [file, isLocked, isError]);
+  }, [file, isLocked, isError, password]);
 
   return (
     <div
-      className={`group relative w-40 h-52 rounded-xl border-2 transition-all duration-200 shadow-sm hover:shadow-md
+      className={`group relative w-[150px] h-[200px] rounded-xl border-2 transition-all duration-200 shadow-sm hover:shadow-md
         ${
           isLocked
             ? 'border-red-300 bg-red-50'
@@ -77,83 +79,74 @@ export function FileCard({
       <div className="flex h-full flex-col items-center justify-center p-2 text-center overflow-hidden">
         <div className="mb-2 flex-grow flex items-center justify-center w-full h-24 overflow-hidden rounded-md bg-white/50">
           {isLocked ? (
-            <Lock className="h-12 w-12 text-red-400" />
+            <Lock className="h-10 w-10 text-red-400" />
           ) : isError ? (
-            <AlertCircle className="h-12 w-12 text-orange-400" />
+            <AlertCircle className="h-10 w-10 text-orange-400" />
           ) : thumbnailUrl ? (
             <img
               src={thumbnailUrl}
               alt="Page 1"
-              className="object-contain w-full h-full shadow-sm rounded border border-slate-100"
+              className="object-contain w-full h-full shadow-sm rounded border border-slate-100 transition-transform duration-300"
+              style={{ transform: `rotate(${rotation}deg)` }}
             />
           ) : (
             <FileText
-              className={`h-12 w-12 ${
-                isVerified ? 'text-green-500' : 'text-slate-400'
-              }`}
+              className={`h-10 w-10 ${isVerified ? 'text-green-500' : 'text-slate-400'}`}
             />
           )}
         </div>
 
         <div className="w-full px-1">
-          <p className="text-sm font-medium text-slate-700 break-words leading-tight truncate">
-            {truncateFilename(file.name)}
+          <p className="text-xs font-medium text-slate-700 break-words leading-tight truncate">
+            {truncateFilename(file.name, 15)}
           </p>
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="mt-1 text-[10px] text-slate-400">
             {formatFileSize(file.size)}
           </p>
         </div>
       </div>
 
-      <div className="absolute inset-0 z-20 hidden flex-col items-center justify-center gap-3 rounded-xl bg-black/60 backdrop-blur-[1px] transition-all group-hover:flex">
+      <div className="absolute inset-0 z-20 hidden flex-col items-center justify-center gap-2 rounded-xl bg-black/60 backdrop-blur-[1px] transition-all group-hover:flex">
         <Button
           variant="destructive"
           size="icon"
-          className="h-10 w-10 rounded-full shadow-lg"
+          className="h-8 w-8 rounded-full shadow-lg"
           onClick={(e) => {
             e.stopPropagation();
             onDelete();
           }}
           title="Remove file"
         >
-          <Trash2 className="h-5 w-5" />
+          <Trash2 className="h-4 w-4" />
         </Button>
 
-        {onRotate && (
+        {onRotate && !isLocked && !isError && (
           <Button
             variant="secondary"
             size="icon"
-            className="h-10 w-10 rounded-full shadow-lg"
+            className="h-8 w-8 rounded-full shadow-lg"
             onClick={(e) => {
               e.stopPropagation();
               onRotate();
             }}
             title="Rotate"
           >
-            <RotateCw className="h-5 w-5" />
+            <RotateCw className="h-4 w-4" />
           </Button>
         )}
 
-        {(isLocked || isVerified) && onUnlock && (
+        {isLocked && onUnlock && (
           <Button
-            variant={isVerified ? 'default' : 'outline'}
+            variant="outline"
             size="icon"
-            className={`h-10 w-10 rounded-full shadow-lg ${
-              isVerified
-                ? 'bg-green-600 hover:bg-green-700'
-                : 'bg-white text-black hover:bg-slate-200'
-            }`}
+            className="h-8 w-8 rounded-full shadow-lg bg-white text-black hover:bg-slate-200"
             onClick={(e) => {
               e.stopPropagation();
               onUnlock();
             }}
-            title={isVerified ? 'Verified' : 'Unlock PDF'}
+            title="Unlock PDF"
           >
-            {isVerified ? (
-              <CheckCircle2 className="h-5 w-5" />
-            ) : (
-              <Lock className="h-5 w-5" />
-            )}
+            <Lock className="h-4 w-4" />
           </Button>
         )}
       </div>

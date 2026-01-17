@@ -3,13 +3,23 @@ import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
-export async function getPdfThumbnailUrl(file: File): Promise<string> {
+export async function getPdfThumbnailUrl(
+  file: File,
+  password?: string
+): Promise<string> {
   try {
     const arrayBuffer = await file.arrayBuffer();
-    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+
+    const loadingTask = pdfjsLib.getDocument({
+      data: arrayBuffer,
+      password: password,
+    });
+
     const pdf = await loadingTask.promise;
     const page = await pdf.getPage(1);
+
     const viewport = page.getViewport({ scale: 0.3 });
+
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
 
@@ -20,12 +30,10 @@ export async function getPdfThumbnailUrl(file: File): Promise<string> {
     canvas.width = viewport.width;
     canvas.height = viewport.height;
 
-    const renderContext = {
+    await page.render({
       canvasContext: context,
       viewport: viewport,
-    };
-
-    await page.render(renderContext).promise;
+    }).promise;
 
     return canvas.toDataURL('image/jpeg', 0.8);
   } catch (error) {

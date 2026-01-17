@@ -6,15 +6,25 @@ export interface FileGridItem {
   isVerified: boolean;
   isError: boolean;
   errorMessage?: string;
+  password?: string;
+  rotation: number;
 }
 
 interface FileGridProps {
   items: FileGridItem[];
   onFilesChange: (files: File[]) => void;
   onUnlock: (fileName: string) => void;
+  onCheckLock?: (file: File) => void;
+  onRotate: (fileName: string) => void;
 }
 
-export function FileGrid({ items, onFilesChange, onUnlock }: FileGridProps) {
+export function FileGrid({
+  items,
+  onFilesChange,
+  onUnlock,
+  onCheckLock,
+  onRotate,
+}: FileGridProps) {
   const handleDelete = (index: number) => {
     const newFiles = items.map((item) => item.file);
     newFiles.splice(index, 1);
@@ -30,10 +40,14 @@ export function FileGrid({ items, onFilesChange, onUnlock }: FileGridProps) {
           index={index}
           onDelete={() => handleDelete(index)}
           onUnlock={() => onUnlock(item.file.name)}
+          onThumbnailError={() => onCheckLock && onCheckLock(item.file)}
+          onRotate={() => onRotate(item.file.name)}
+          rotation={item.rotation}
           isLocked={item.isLocked}
           isVerified={item.isVerified}
           isError={item.isError}
           errorMessage={item.errorMessage}
+          password={item.password}
         />
       ))}
     </div>
